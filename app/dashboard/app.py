@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import logging
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')  # <-- Ajoutez template_folder='templates'
 LOG_FILE = Path(__file__).parent.parent.parent / "logs" / "derniere_analyse.csv"
 
 @app.route('/')
@@ -18,6 +18,8 @@ def get_alertes():
     try:
         if LOG_FILE.exists():
             df = pd.read_csv(LOG_FILE)
+            # Convertir la colonne 'is_anomaly' en booléen (elle est lue comme string depuis CSV)
+            df['is_anomaly'] = df['is_anomaly'].astype(bool)
             alertes = df[df['is_anomaly'] == True].to_dict('records')
             return jsonify(alertes)
         return jsonify([])

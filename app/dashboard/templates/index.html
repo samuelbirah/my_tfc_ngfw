@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGFW-Congo - Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .alert-card {
+            background: #e74c3c;
+        }
+        .alert-list {
+            margin-top: 30px;
+        }
+        .alert-item {
+            background: #fff3f3;
+            border-left: 4px solid #e74c3c;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .no-alerts {
+            color: #7f8c8d;
+            text-align: center;
+            padding: 20px;
+        }
+        .last-update {
+            text-align: right;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐉 NGFW-Congo - Dashboard de Surveillance</h1>
+        
+        <div class="stats">
+            <div class="stat-card" id="total-packets">
+                <h3>Paquets Analysés</h3>
+                <p id="total-count">0</p>
+            </div>
+            <div class="stat-card alert-card" id="alert-packets">
+                <h3>Anomalies Détectées</h3>
+                <p id="alert-count">0</p>
+            </div>
+        </div>
+
+        <div class="alert-list">
+            <h2>📋 Dernières Alertes</h2>
+            <div id="alerts-container">
+                <div class="no-alerts" id="no-alerts">
+                    ✅ Aucune anomalie détectée - Tout est normal
+                </div>
+            </div>
+        </div>
+
+        <div class="last-update" id="last-update">
+            Dernière mise à jour: --
+        </div>
+    </div>
+
+    <script>
+        // Fonction pour formater la date
+        function formatDate(dateString) {
+            const options = { 
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            };
+            return new Date(dateString).toLocaleDateString('fr-FR', options);
+        }
+
+        // Fonction pour récupérer les alertes
+        async function fetchAlertes() {
+            try {
+                const response = await fetch('/api/alertes');
+                const alertes = await response.json();
+                
+                // Mettre à jour les compteurs
+                document.getElementById('total-count').textContent = alertes.length > 0 ? '50' : '0';
+                document.getElementById('alert-count').textContent = alertes.length;
+                
+                // Mettre à jour la liste des alertes
+                const alertsContainer = document.getElementById('alerts-container');
+                const noAlerts = document.getElementById('no-alerts');
+                
+                if (alertes.length === 0) {
+                    noAlerts.style.display = 'block';
+                    alertsContainer.innerHTML = '';
+                } else {
+                    noAlerts.style.display = 'none';
+                    alertsContainer.innerHTML = alertes.map(alerte => `
+                        <div class="alert-item">
+                            <strong>🚨 ANOMALIE DÉTECTÉE</strong><br>
+                            <strong>Source:</strong> ${alerte.src_ip} <br>
+                            <strong>Destination:</strong> ${alerte.dst_ip} <br>
+                            <strong>Taille:</strong> ${alerte.length} bytes <br>
+                            <strong>Score d'anomalie:</strong> ${alerte.anomaly_score?.toFixed(4) || 'N/A'} <br>
+                            <strong>Heure:</strong> ${formatDate(alerte.timestamp)}
+                        </div>
+                    `).join('');
+                }
+                
+                // Mettre à jour l'heure de dernière mise à jour
+                document.getElementById('last-update').textContent = 
+                    `Dernière mise à jour: ${new Date().toLocaleTimeString('fr-FR')}`;
+                
+            } catch (error) {
+                console.error('Erreur lors de la récupération des alertes:', error);
+            }
+        }
+
+        // Charger les alertes au démarrage et toutes les 10 secondes
+        fetchAlertes();
+        setInterval(fetchAlertes, 10000);
+    </script>
+</body>
+</html>
