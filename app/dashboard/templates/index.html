@@ -100,14 +100,18 @@
             return new Date(dateString).toLocaleDateString('fr-FR', options);
         }
 
-        // Fonction pour récupérer les alertes
-        async function fetchAlertes() {
+        // Fonction pour récupérer les alertes ET les stats complètes
+        async function fetchData() {
             try {
-                const response = await fetch('/api/alertes');
-                const alertes = await response.json();
+                // Récupérer le fichier CSV complet pour avoir le nombre total de paquets
+                const responseCsv = await fetch('/api/derniere-analyse');
+                const data = await responseCsv.json();
                 
-                // Mettre à jour les compteurs
-                document.getElementById('total-count').textContent = alertes.length > 0 ? '50' : '0';
+                const totalPaquets = data.total_paquets || 0;
+                const alertes = data.alertes || [];
+                
+                // Mettre à jour les compteurs DYNAMIQUEMENT
+                document.getElementById('total-count').textContent = totalPaquets;
                 document.getElementById('alert-count').textContent = alertes.length;
                 
                 // Mettre à jour la liste des alertes
@@ -136,13 +140,13 @@
                     `Dernière mise à jour: ${new Date().toLocaleTimeString('fr-FR')}`;
                 
             } catch (error) {
-                console.error('Erreur lors de la récupération des alertes:', error);
+                console.error('Erreur lors de la récupération des données:', error);
             }
         }
 
-        // Charger les alertes au démarrage et toutes les 10 secondes
-        fetchAlertes();
-        setInterval(fetchAlertes, 10000);
+        // Charger les données au démarrage et toutes les 5 secondes
+        fetchData();
+        setInterval(fetchData, 5000);  // Mise à jour plus fréquente (5s)
     </script>
 </body>
 </html>
